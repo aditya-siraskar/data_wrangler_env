@@ -1,3 +1,14 @@
+---
+title: Data Wrangler Env
+emoji: 🗄️
+colorFrom: blue
+colorTo: indigo
+sdk: docker
+pinned: false
+tags:
+  - openenv
+---
+
 # 🗄️ DataWranglerEnv: A Real-World Data Engineering OpenEnv
 
 **A Meta / PyTorch Hackathon Submission**
