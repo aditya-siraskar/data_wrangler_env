@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "data_wrangler_env"
+version = "1.0.0"
+description = "Data Wrangler OpenEnv for Meta/PyTorch Hackathon"
+dependencies = [
+    "openenv-core>=0.2.2",
+    "pydantic>=2.0.0",
+]
+
+[tool.setuptools.packages.find]
+include = ["my_env", "my_env.*"]

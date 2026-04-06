@@ -1,0 +1,7 @@
+name: data_wrangler_env
+version: "1.0.0"
+description: A real-world data cleaning environment where agents execute SQL to standardize, impute, and deduplicate messy data.
+tags:
+  - database
+  - data-engineering
+  - sql
