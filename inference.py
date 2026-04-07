@@ -101,7 +101,7 @@ async def main() -> None:
     client = OpenAI(base_url=API_BASE_URL, api_key=API_KEY)
 
     # Connect to the local server running in Terminal 1
-    env = DataWranglerEnv(base_url="http://localhost:8000")
+    env = DataWranglerEnv(base_url="http://localhost:7860")
 
     history: List[str] = []
     rewards: List[float] = []
