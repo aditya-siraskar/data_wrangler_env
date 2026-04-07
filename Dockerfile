@@ -9,8 +9,9 @@ COPY pyproject.toml .
 COPY my_env ./my_env
 
 # Install the package in editable mode so Uvicorn can find it
-RUN pip install --no-cache-dir -e .
-RUN pip install --no-cache-dir uvicorn fastapi
+# Added --default-timeout=1000 to prevent network timeouts during large downloads
+RUN pip install --default-timeout=1000 --no-cache-dir -e .
+RUN pip install --default-timeout=1000 --no-cache-dir uvicorn fastapi
 
 # Define environment variables used by OpenEnv/FastAPI
 ENV PORT=7860
