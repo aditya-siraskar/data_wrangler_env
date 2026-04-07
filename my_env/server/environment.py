@@ -20,20 +20,14 @@ class DataWranglerEnvironment(Environment):
         cursor = self.conn.cursor()
 
         if difficulty == "easy":
-            self._state.task_description = (
-                "Task: Standardize 'is_active' in the 'users' table to exactly '1' or '0'."
-            )
+            self._state.task_description = "Task: Standardize 'is_active' in the 'users' table to exactly '1' or '0'."
             cursor.execute("CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT, is_active TEXT)")
-            # 5 rows total. Each row fixed gives exactly 0.2 reward!
             messy_data = [(1, 'Alice', 'Yes'), (2, 'Bob', 'N'), (3, 'Charlie', 'Y'), (4, 'Diana', 'No'), (5, 'Eve', 'Yes')]
             cursor.executemany("INSERT INTO users VALUES (?, ?, ?)", messy_data)
 
         elif difficulty == "medium":
-            self._state.task_description = (
-                "Task: Impute missing 'total_price' in 'orders' table (quantity * unit_price)."
-            )
+            self._state.task_description = "Task: Impute missing 'total_price' in 'orders' table (quantity * unit_price)."
             cursor.execute("CREATE TABLE orders (id INTEGER PRIMARY KEY, item TEXT, quantity INTEGER, unit_price REAL, total_price REAL)")
-            # 4 rows total. Each row fixed gives exactly 0.25 reward!
             orders_data = [
                 (1, 'Widget', 2, 10.0, None),
                 (2, 'Gadget', 1, 15.0, None),
@@ -43,9 +37,7 @@ class DataWranglerEnvironment(Environment):
             cursor.executemany("INSERT INTO orders VALUES (?, ?, ?, ?, ?)", orders_data)
 
         elif difficulty == "hard":
-            self._state.task_description = (
-                "Task: Deduplicate 'customers' (delete id 3) and fix 'purchases' foreign keys to point to id 1."
-            )
+            self._state.task_description = "Task: Deduplicate 'customers' (delete id 3) and fix 'purchases' foreign keys to point to id 1."
             cursor.execute("CREATE TABLE customers (id INTEGER PRIMARY KEY, email TEXT, name TEXT)")
             cursor.execute("CREATE TABLE purchases (id INTEGER PRIMARY KEY, customer_id INTEGER, amount REAL)")
             cursor.executemany("INSERT INTO customers VALUES (?, ?, ?)", [
@@ -68,7 +60,7 @@ class DataWranglerEnvironment(Environment):
             task_difficulty=difficulty
         )
         self._setup_database(difficulty)
-        self._last_score = 0.0 # Reset tracking
+        self._last_score = 0.0 
 
         return DataWranglerObservation(
             done=False, reward=0.0,
@@ -77,10 +69,8 @@ class DataWranglerEnvironment(Environment):
         )
 
     def _grade_task(self) -> float:
-        """Returns a continuous score from 0.0 to 1.0 based on database state."""
         cursor = self.conn.cursor()
         score = 0.0
-        
         try:
             if self._state.task_difficulty == "easy":
                 cursor.execute("SELECT is_active FROM users")
@@ -99,13 +89,10 @@ class DataWranglerEnvironment(Environment):
                 dupes = cursor.fetchone()['c']
                 cursor.execute("SELECT COUNT(*) as c FROM purchases WHERE customer_id=3")
                 orphaned = cursor.fetchone()['c']
-                
-                # Fractional rewards!
                 if dupes == 1: score += 0.5   
                 if orphaned == 0: score += 0.5 
         except Exception:
-            pass # If they broke the schema, score stays 0.0
-            
+            pass 
         return round(score, 2)
 
     def step(self, action: DataWranglerAction, timeout_s=None, **kwargs) -> DataWranglerObservation:
@@ -119,7 +106,7 @@ class DataWranglerEnvironment(Environment):
         if action.action_type == "submit_task":
             done = True
             current_score = self._grade_task()
-            reward = current_score - self._last_score # Final delta
+            reward = current_score - self._last_score 
             if current_score == 1.0:
                 feedback = "Task submitted. Perfect score!"
             elif current_score > 0.0:
@@ -136,10 +123,37 @@ class DataWranglerEnvironment(Environment):
                     fetched = cursor.fetchmany(50)
                     results = [dict(row) for row in fetched]
                     feedback = "SELECT query executed successfully."
-                    reward = 0.01 # Small explore bonus
+                    reward = 0.01 
                 else:
                     self.conn.commit()
                     rows_affected = cursor.rowcount
                     
-                    # CALCULATE PARTIAL PROGRESS REWARD!
                     current_score = self._grade_task()
+                    delta = current_score - self._last_score
+                    
+                    if delta > 0:
+                        reward = delta 
+                        feedback = f"Success! You improved the data. {rows_affected} rows affected."
+                    elif delta < 0:
+                        reward = delta 
+                        feedback = f"Warning: You undid previous progress. {rows_affected} rows affected."
+                    else:
+                        reward = 0.0 
+                        feedback = f"Query executed, but task progress didn't change. {rows_affected} rows affected."
+                    
+                    self._last_score = current_score
+                    
+            except Exception as e:
+                feedback = f"SQL Error: {str(e)}"
+                reward = -0.05 
+        else:
+            feedback = "Invalid action."
+
+        return DataWranglerObservation(
+            done=done, reward=reward, feedback_message=feedback,
+            schema_info=self._get_schema(), query_results=results, rows_affected=rows_affected
+        )
+
+    @property
+    def state(self) -> DataWranglerState:
+        return self._state
