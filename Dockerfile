@@ -13,13 +13,13 @@ RUN pip install --no-cache-dir -e .
 RUN pip install --no-cache-dir uvicorn fastapi
 
 # Define environment variables used by OpenEnv/FastAPI
-ENV PORT=8000
+ENV PORT=7860
 ENV HOST=0.0.0.0
 ENV WORKERS=2
 ENV MAX_CONCURRENT_ENVS=100
 
 # Expose the port the app runs on
-EXPOSE 8000
+EXPOSE 7860
 
 # Command to run the application using Uvicorn
-CMD ["uvicorn", "my_env.server.app:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "my_env.server.app:app", "--host", "0.0.0.0", "--port", "7860"]
